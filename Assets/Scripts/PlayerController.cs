@@ -13,6 +13,9 @@ public class PlayerController : MonoBehaviour
     private float horizontalMove = 0f;
     private bool jump = false;
     private bool crouch = false;
+    private int attackToRight = 1;
+    [HideInInspector] public bool attack = false;
+    [HideInInspector] public bool attackDelay = false;
 
     void Start()
     {
@@ -21,17 +24,32 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        horizontalMove = Input.GetAxis("Horizontal") * speed;
+        horizontalMove = Input.GetAxisRaw("Horizontal") * speed;
         animator.SetFloat("Speed", Mathf.Abs(horizontalMove));
 
-        if (Input.GetKey(KeyCode.UpArrow))
+        if (Input.GetKey(KeyCode.UpArrow) && (jump == false))
         {
             jump = true;
             animator.SetBool("IsJumping", true);
         }
 
-        if (Input.GetKey(KeyCode.Space))
+        if (Input.GetKey(KeyCode.Space) && (attack == false) && (attackDelay == false) && !animator.GetCurrentAnimatorStateInfo(0).IsName("Attacking"))
         {
+            if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.LeftArrow))
+            {
+                attackToRight = -1;
+            }
+            else if (Input.GetKey(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.RightArrow))
+            {
+                attackToRight = 1;
+            }
+            else
+            {
+                attackToRight = controller.GetFacing() ? 1 : -1;
+            }
+            
+            attack = true;
+            attackDelay = true;
             animator.SetBool("IsAttacking", true);
         }
 
@@ -39,7 +57,14 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        controller.Move(horizontalMove * Time.fixedDeltaTime, crouch, jump);
+        if (!attack)
+        {
+            controller.Move(horizontalMove * Time.fixedDeltaTime, jump);
+        }
+        else
+        {
+            controller.Move(attackToRight * Time.fixedDeltaTime * speed * 1.2f, false);
+        }
         jump = false;
     }
 
@@ -47,4 +72,11 @@ public class PlayerController : MonoBehaviour
     {
         animator.SetBool("IsJumping", false);
     }
+
+    public void GroundPlayer()
+    {
+        controller.GroundPlayer();
+    }
+
+
 }
